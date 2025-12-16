@@ -1,0 +1,169 @@
+// Global styles entry point
+@import './variables';
+@import './mixins';
+
+// Base styles
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: linear-gradient(180deg, $bg-main, $bg-panel);
+  color: $text-main;
+}
+
+// Common components styles
+.page-header {
+  padding: $spacing-md;
+  background: $bg-panel;
+  border-bottom: 1px solid $border-base;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+// Common layout components
+.sidebar {
+  width: 300px;
+  background: $bg-panel;
+  border-right: 1px solid $border-base;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s;
+}
+
+.sidebar.collapsed {
+  width: 60px;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.video-grid {
+  display: grid;
+  height: 100%;
+  gap: $spacing-sm;
+}
+
+.video-player-container {
+  border-radius: $radius-base;
+  overflow: hidden;
+  background: #f5f7fa;
+  position: relative;
+}
+
+.video-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.video-element {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder-content {
+  text-align: center;
+  color: #909399;
+}
+
+.placeholder-text {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.select-prompt {
+  font-size: 14px;
+  color: #c0c4cc;
+}
+
+.ptz-overlay {
+  position: absolute;
+  top: $spacing-sm;
+  left: $spacing-sm;
+  z-index: 10;
+}
+
+// Component-specific styles
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  
+  &.online {
+    background: rgba($success, 0.2);
+    color: $success;
+    border: 1px solid $success;
+  }
+  
+  &.offline {
+    background: rgba($danger, 0.2);
+    color: $danger;
+    border: 1px solid $danger;
+  }
+  
+  &.motion-detect {
+    background: rgba($warning, 0.2);
+    color: $warning;
+    border: 1px solid $warning;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: $breakpoint-md) {
+  .page-container {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid $border-base;
+  }
+  
+  .btn-group {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .responsive-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+// Utility functions
+@function theme-color($color, $opacity: 1) {
+  @if $color == "primary" {
+    @return rgba($primary, $opacity);
+  } @else if $color == "success" {
+    @return rgba($success, $opacity);
+  } @else if $color == "warning" {
+    @return rgba($warning, $opacity);
+  } @else if $color == "danger" {
+    @return rgba($danger, $opacity);
+  } @else {
+    @return rgba($text-main, $opacity);
+  }
+}

@@ -1,0 +1,93 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment
+.env
+.env*.local
+.env*.local.js
+.env*.local.json
+
+# Production
+dist/
+dist-ssr/
+*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+pnpm-debug.log*
+
+# Coverage
+coverage/
+
+# Reports
+junit.xml
+coverage-final.json
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local files
+public/uploads/
+uploads/
+local/
+
+# Process
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Testing
+.nyc_output/
+coverage/
+
+# Cache
+.cache/
+.vite/
+.temp/
+
+# Build outputs
+output/
+build/
+
+# Sensitive files
+secret.json
+secrets.json
+config/secrets.*
+.env.local
+.env.production.local
+.env.testing.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# IDE specific
+.vs/
+.vscode/
+.idea/
+.settings/
+.project
+
+# System
+ehthumbs.db
+Icon?
+desktop.ini
+
+# Lock files
+pnpm-lock.yaml
+yarn.lock

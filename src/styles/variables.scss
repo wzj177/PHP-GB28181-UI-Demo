@@ -1,0 +1,46 @@
+// Global color variables
+$bg-main:        #0B1220 !default;  // 页面主背景
+$bg-panel:       #0F172A !default;  // 面板 / 树 / 控件背景
+$bg-hover:       #162033 !default;  // hover
+$bg-active:      #1E293B !default;  // 选中
+
+$border-base:    #243047 !default;  // 分割线
+$border-primary:    #3B82F6 !default;  // 分割线-主
+$border-light:   #2F3C57 !default;
+
+$text-main:      #E5E7EB !default;  // 主文本
+$text-muted:     #9CA3AF !default;  // 次要
+$text-disabled:  #6B7280 !default;
+
+$primary:        #3B82F6 !default;  // 操作蓝
+$primary-hover:  #2563EB !default;
+
+$success:        #22C55E !default;  // 在线
+$warning:        #F59E0B !default;  // 异常
+$danger:         #EF4444 !default;  // 离线
+
+// Common sizes
+$radius-base:    8px !default;
+$radius-panel:   14px !default;
+
+$spacing-xs:     4px !default;
+$spacing-sm:     8px !default;
+$spacing-md:     16px !default;
+$spacing-lg:     24px !default;
+$spacing-xl:     32px !default;
+
+// Z-index layers
+$z-index-dropdown: 1000;
+$z-index-sticky:   1020;
+$z-index-fixed:    1030;
+$z-index-modal:    1040;
+$z-index-popover:  1060;
+$z-index-tooltip:  1070;
+
+// Breakpoints
+$breakpoint-xs: 0;
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
+$breakpoint-xxl: 1400px;
