@@ -106,9 +106,7 @@ http://localhost:3230
 
 - 全局样式和主题变量位于 `src/styles/` 目录中。
 
-## 环境配置
 
-应用程序默认运行在 `http://localhost:3230`。
 
 ## API 模拟
 
