@@ -17,24 +17,27 @@ import {
   ElFormItem
 } from 'element-plus'
 import { Search, Bell, Check, CircleCheck, Close, Location } from '@element-plus/icons-vue'
-import { deviceApi } from '@/api/deviceApi'
+import { alarmApi } from '@/api/alarmApi'
 
 // Define alarm interface
 interface Alarm {
   id: string
-  deviceId: string
-  deviceName: string
-  channel: string
-  type: 'motion' | 'tamper' | 'disconnect' | 'storage_full'
-  status: 'active' | 'acknowledged' | 'cleared'
+  device_id: string
+  device_name: string
+  channel_id: string
+  channel_name?: string
+  type: 'motion' | 'tamper' | 'disconnect' | 'storage_full' | 'alarm'
+  status: 'active' | 'handled' | 'cleared'
   description: string
   timestamp: string
+  created_at: string
   severity: 'low' | 'medium' | 'high' | 'critical'
+  priority?: number
 }
 
 interface Pagination {
   page: number
-  pageSize: number
+  limit: number
   total: number
 }
 
@@ -43,7 +46,7 @@ const alarms = ref<Alarm[]>([])
 const loading = ref(false)
 const pagination = reactive<Pagination>({
   page: 1,
-  pageSize: 10,
+  limit: 10,
   total: 0
 })
 
@@ -65,19 +68,24 @@ const loadAlarms = async () => {
   try {
     const params = {
       page: pagination.page,
-      pageSize: pagination.pageSize,
+      limit: pagination.limit,
       status: filters.status || undefined,
       severity: filters.severity || undefined,
-      type: filters.type || undefined,
-      keyword: filters.keyword || undefined
+      device_id: filters.keyword ? filters.keyword : undefined, // Using keyword field for device ID search
     }
-    
-    const response = await deviceApi.getAlarms(params)
-    alarms.value = response.data.list
-    pagination.total = response.data.pagination.total
-  } catch (error) {
+
+    const response = await alarmApi.getAlarmList(params)
+    // Handle both formats: with pagination wrapper and direct array
+    if (response.data && response.data.list) {
+      alarms.value = response.data.list
+      pagination.total = response.data.paginator?.total || response.data.list.length
+    } else {
+      alarms.value = response.data || []
+      pagination.total = response.data?.length || 0
+    }
+  } catch (error: any) {
     console.error('Failed to fetch alarms:', error)
-    ElMessage.error('获取报警列表失败')
+    ElMessage.error(error.message || '获取报警列表失败')
   } finally {
     loading.value = false
   }
@@ -86,12 +94,16 @@ const loadAlarms = async () => {
 // Update alarm status
 const updateAlarmStatus = async (alarmId: string, status: string) => {
   try {
-    await deviceApi.updateAlarmStatus(alarmId, status)
-    ElMessage.success('报警状态更新成功')
-    loadAlarms() // Refresh the list
-  } catch (error) {
+    const response = await alarmApi.handleAlarm(alarmId, { status })
+    if (response.code === 0) {
+      ElMessage.success('报警状态更新成功')
+      loadAlarms() // Refresh the list
+    } else {
+      ElMessage.error(response.message || '更新报警状态失败')
+    }
+  } catch (error: any) {
     console.error('Failed to update alarm status:', error)
-    ElMessage.error('更新报警状态失败')
+    ElMessage.error(error.message || '更新报警状态失败')
   }
 }
 
@@ -103,7 +115,7 @@ const handlePageChange = (page: number) => {
 
 const handleSizeChange = (size: number) => {
   pagination.page = 1
-  pagination.pageSize = size
+  pagination.limit = size
   loadAlarms()
 }
 
@@ -202,13 +214,6 @@ onMounted(() => {
 
 <template>
   <div class="alarm-management-page">
-    <div class="header">
-      <h2>
-        <Bell class="header-icon" />
-        报警与通知
-      </h2>
-    </div>
-
     <!-- Filter controls -->
     <ElCard class="filter-card">
       <div class="filter-controls">
@@ -225,9 +230,18 @@ onMounted(() => {
           style="width: 150px; margin-right: 1rem;"
           clearable
         >
-          <ElOption label="激活" value="active" />
-          <ElOption label="已确认" value="acknowledged" />
-          <ElOption label="已清除" value="cleared" />
+          <ElOption
+            label="激活"
+            value="active"
+          />
+          <ElOption
+            label="已确认"
+            value="acknowledged"
+          />
+          <ElOption
+            label="已清除"
+            value="cleared"
+          />
         </ElSelect>
         
         <ElSelect
@@ -236,10 +250,22 @@ onMounted(() => {
           style="width: 150px; margin-right: 1rem;"
           clearable
         >
-          <ElOption label="低" value="low" />
-          <ElOption label="中" value="medium" />
-          <ElOption label="高" value="high" />
-          <ElOption label="严重" value="critical" />
+          <ElOption
+            label="低"
+            value="low"
+          />
+          <ElOption
+            label="中"
+            value="medium"
+          />
+          <ElOption
+            label="高"
+            value="high"
+          />
+          <ElOption
+            label="严重"
+            value="critical"
+          />
         </ElSelect>
         
         <ElSelect
@@ -248,16 +274,28 @@ onMounted(() => {
           style="width: 150px; margin-right: 1rem;"
           clearable
         >
-          <ElOption label="移动侦测" value="motion" />
-          <ElOption label="防拆报警" value="tamper" />
-          <ElOption label="设备断线" value="disconnect" />
-          <ElOption label="存储满" value="storage_full" />
+          <ElOption
+            label="移动侦测"
+            value="motion"
+          />
+          <ElOption
+            label="防拆报警"
+            value="tamper"
+          />
+          <ElOption
+            label="设备断线"
+            value="disconnect"
+          />
+          <ElOption
+            label="存储满"
+            value="storage_full"
+          />
         </ElSelect>
         
         <ElButton 
           type="primary" 
-          @click="searchAlarms"
           :icon="Search"
+          @click="searchAlarms"
         >
           查询
         </ElButton>
@@ -272,41 +310,69 @@ onMounted(() => {
         </div>
       </template>
       
-      <ElTable 
-        :data="alarms" 
+      <ElTable
         v-loading="loading"
+        :data="alarms"
         style="width: 100%"
       >
-        <ElTableColumn prop="deviceName" label="设备名称" width="150" />
-        <ElTableColumn prop="channel" label="通道" width="100" />
-        <ElTableColumn label="报警类型" width="120">
+        <ElTableColumn
+          prop="device_name"
+          label="设备名称"
+          width="150"
+        />
+        <ElTableColumn
+          prop="channel_name"
+          label="通道"
+          width="100"
+        />
+        <ElTableColumn
+          label="报警类型"
+          width="120"
+        >
           <template #default="{ row }">
             <ElTag :type="getAlarmTypeTagType(row.type)">
               {{ getAlarmTypeLabel(row.type) }}
             </ElTag>
           </template>
         </ElTableColumn>
-        <ElTableColumn label="严重等级" width="100">
+        <ElTableColumn
+          label="严重等级"
+          width="100"
+        >
           <template #default="{ row }">
             <ElTag :type="getSeverityTagType(row.severity)">
               {{ getSeverityLabel(row.severity) }}
             </ElTag>
           </template>
         </ElTableColumn>
-        <ElTableColumn label="状态" width="100">
+        <ElTableColumn
+          label="状态"
+          width="100"
+        >
           <template #default="{ row }">
             <ElTag :type="getAlarmStatusTagType(row.status)">
               {{ getAlarmStatusLabel(row.status) }}
             </ElTag>
           </template>
         </ElTableColumn>
-        <ElTableColumn prop="description" label="描述" min-width="200" />
-        <ElTableColumn prop="timestamp" label="时间" width="180">
+        <ElTableColumn
+          prop="description"
+          label="描述"
+          min-width="200"
+        />
+        <ElTableColumn
+          prop="created_at"
+          label="时间"
+          width="180"
+        >
           <template #default="{ row }">
-            {{ formatDate(row.timestamp) }}
+            {{ formatDate(row.created_at) }}
           </template>
         </ElTableColumn>
-        <ElTableColumn label="操作" width="320">
+        <ElTableColumn
+          label="操作"
+          width="320"
+        >
           <template #default="{ row }">
             <ElButton
               size="small"
@@ -317,20 +383,20 @@ onMounted(() => {
               详情
             </ElButton>
             <ElButton
+              v-if="row.status === 'active'"
               size="small"
               type="warning"
               :icon="Check"
-              @click="updateAlarmStatus(row.id, 'acknowledged')"
-              v-if="row.status === 'active'"
+              @click="updateAlarmStatus(row.id, 'handled')"
             >
               确认
             </ElButton>
             <ElButton
+              v-if="row.status === 'active' || row.status === 'handled'"
               size="small"
               type="success"
               :icon="CircleCheck"
               @click="updateAlarmStatus(row.id, 'cleared')"
-              v-if="row.status === 'active' || row.status === 'acknowledged'"
             >
               清除
             </ElButton>
@@ -355,13 +421,13 @@ onMounted(() => {
       <!-- Pagination -->
       <div class="pagination">
         <ElPagination
-          @size-change="handleSizeChange"
-          @current-change="handlePageChange"
           :current-page="pagination.page"
           :page-sizes="[10, 20, 50, 100]"
           :page-size="pagination.pageSize"
           layout="total, sizes, prev, pager, next, jumper"
           :total="pagination.total"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
         />
       </div>
     </ElCard>
@@ -373,14 +439,17 @@ onMounted(() => {
       width="600px"
       :before-close="closeDetailDialog"
     >
-      <div v-if="selectedAlarm" class="alarm-detail">
+      <div
+        v-if="selectedAlarm"
+        class="alarm-detail"
+      >
         <div class="detail-row">
           <span class="label">设备名称:</span>
-          <span class="value">{{ selectedAlarm.deviceName }}</span>
+          <span class="value">{{ selectedAlarm.device_name }}</span>
         </div>
         <div class="detail-row">
           <span class="label">通道:</span>
-          <span class="value">{{ selectedAlarm.channel }}</span>
+          <span class="value">{{ selectedAlarm.channel_name || selectedAlarm.channel_id }}</span>
         </div>
         <div class="detail-row">
           <span class="label">报警类型:</span>
@@ -408,7 +477,7 @@ onMounted(() => {
         </div>
         <div class="detail-row">
           <span class="label">时间:</span>
-          <span class="value">{{ formatDate(selectedAlarm.timestamp) }}</span>
+          <span class="value">{{ formatDate(selectedAlarm.created_at) }}</span>
         </div>
         <div class="detail-row full-width">
           <span class="label">描述:</span>
@@ -420,9 +489,9 @@ onMounted(() => {
         <span class="dialog-footer">
           <ElButton @click="closeDetailDialog">关闭</ElButton>
           <ElButton 
-            type="primary" 
+            v-if="selectedAlarm?.status !== 'cleared'" 
+            type="primary"
             @click="updateAlarmStatus(selectedAlarm!.id, 'cleared')"
-            v-if="selectedAlarm?.status !== 'cleared'"
           >
             清除报警
           </ElButton>

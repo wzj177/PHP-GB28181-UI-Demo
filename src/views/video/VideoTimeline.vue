@@ -213,15 +213,23 @@ defineExpose({
 
     <div class="timeline-wrapper">
       <div class="timeline-header">
-        <div class="timeline-title">录像时间轴（24 小时）</div>
-        <div ref="labelRef">{{ format(currentSecond) }}</div>
+        <div class="timeline-title">
+          录像时间轴（24 小时）
+        </div>
+        <div ref="labelRef">
+          {{ format(currentSecond) }}
+        </div>
       </div>
 
-      <canvas ref="canvasRef" class="timeline-canvas" @click="handleCanvasClick" />
+      <canvas
+        ref="canvasRef"
+        class="timeline-canvas"
+        @click="handleCanvasClick"
+      />
 
       <div class="legend">
-        <span><i class="dot"></i> 正常录像</span>
-        <span><i class="dot red"></i> 报警录像</span>
+        <span><i class="dot" /> 正常录像</span>
+        <span><i class="dot red" /> 报警录像</span>
       </div>
     </div>
   </div>

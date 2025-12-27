@@ -11,7 +11,7 @@ import {
   ElTag
 } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
-import { deviceApi } from '@/api/deviceApi'
+import { gb28181Api } from '@/api/gb28181Api'
 
 const router = useRouter()
 
@@ -35,57 +35,45 @@ const searchKeyword = ref('')
 const loadDeviceTree = async () => {
   loading.value = true
   try {
-    // Simulated data - in real app, this would come from API
-    const mockResponse = [
-      {
-        id: 'group1',
-        name: '监控区域A',
-        hasChildren: true,
-        type: 'group',
-        children: [
-          {
-            id: 'device1',
-            name: '大厅IPC',
-            channelName: '通道1',
-            type: 'video-channel',
-            status: 'online'
-          },
-          {
-            id: 'device2',
-            name: '大厅IPC',
-            type: 'video-channel',
-            channelName: '通道2',
-            status: 'motion_detect'
-          }
-        ]
-      },
-      {
-        id: 'group2',
-        name: '监控区域B',
-        hasChildren: true,
-        type: 'group',
-        children: [
-          {
-            id: 'device3',
-            name: '门口IPC',
-            type: 'video-channel',
-            channelName: '通道1',
-            status: 'online'
-          },
-          {
-            id: 'device4',
-            name: '停车场IPC',
-            type: 'video-channel',
-            channelName: '通道1',
-            status: 'offline'
-          }
-        ]
-      }
-    ]
+    console.log('📼 Fetching device list...')
+    const response = await gb28181Api.getDeviceList();
 
-    tableData.value = mockResponse as DeviceTableItem[]
-  } catch (error) {
-    console.error('Failed to load device tree:', error)
+    console.log('📼 Device list response:', response)
+
+    // Handle different response structures
+    let devices: any[] = []
+
+    if (response?.list) {
+      // Mock API returns { list: [...], paginator: {...} }
+      devices = response.list
+    } else if (response?.code === 0 && response.data?.list) {
+      // Real API returns { code: 0, data: { list: [...] } }
+      devices = response.data.list
+    } else if (response?.code === 0 && Array.isArray(response.data)) {
+      // Alternative: { code: 0, data: [...] }
+      devices = response.data
+    } else if (Array.isArray(response)) {
+      // Direct array response
+      devices = response
+    }
+
+    console.log('📼 Parsed devices:', devices)
+
+    // Transform the device data to match the expected table structure
+    const transformedData: DeviceTableItem[] = devices.map((device: any) => ({
+      id: device.device_id || device.id,
+      name: device.device_name || device.name || '未知设备',
+      type: 'video-channel',
+      status: device.status || 'offline',
+      channelName: '通道1',
+      hasChildren: false
+    }));
+
+    tableData.value = transformedData;
+    console.log('✅ Device list loaded:', transformedData.length, 'items')
+  } catch (error: any) {
+    console.error('❌ Failed to load device tree:', error)
+    ElMessage.error(error.message || '获取设备列表失败')
   } finally {
     loading.value = false
   }
@@ -125,10 +113,6 @@ onMounted(() => {
 
 <template>
   <div class="video-playback-page">
-    <div class="header">
-      <h2>录像回放</h2>
-    </div>
-
     <div class="main-content">
       <!-- Main content - Device table -->
       <div class="content-area">
@@ -144,8 +128,8 @@ onMounted(() => {
 
             <ElButton
               type="primary"
-              @click="loadDeviceTree"
               :icon="Search"
+              @click="loadDeviceTree"
             >
               查询
             </ElButton>
@@ -161,41 +145,55 @@ onMounted(() => {
           </template>
 
           <ElTable
-            :data="tableData"
             v-loading="loading"
+            :data="tableData"
             style="width: 100%"
             row-key="id"
             default-expand-all
             :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
           >
-            <ElTableColumn prop="name" label="设备号" min-width="200">
+            <ElTableColumn
+              prop="name"
+              label="设备号"
+              min-width="200"
+            >
               <template #default="{ row }">
                 <span>{{ row.name }}</span>
               </template>
             </ElTableColumn>
-            <ElTableColumn prop="channelName" label="通道号" width="150" />
-            <ElTableColumn label="状态" width="120">
+            <ElTableColumn
+              prop="channelName"
+              label="通道号"
+              width="150"
+            />
+            <ElTableColumn
+              label="状态"
+              width="120"
+            >
               <template #default="{ row }">
                 <ElTag :type="getStatusTag(row.status).type">
                   {{ getStatusTag(row.status).label }}
                 </ElTag>
               </template>
             </ElTableColumn>
-            <ElTableColumn label="操作" width="250">
+            <ElTableColumn
+              label="操作"
+              width="250"
+            >
               <template #default="{ row }">
                 <ElButton
+                  v-if="row.type === 'video-channel'"
                   size="small"
                   type="primary"
                   @click="goToPlayback(row)"
-                  v-if="row.type === 'video-channel'"
                 >
                   录像回放时间轴
                 </ElButton>
                 <ElButton
+                  v-if="row.type === 'video-channel'"
                   size="small"
                   type="info"
                   @click="goToList(row)"
-                  v-if="row.type === 'video-channel'"
                 >
                   录像列表
                 </ElButton>

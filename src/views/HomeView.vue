@@ -38,8 +38,12 @@ const navigateTo = (path: string) => {
 
 <template>
   <div class="home">
-    <h1 class="title">PHP-GB28181</h1>
-    <p class="subtitle">安防监控系统演示平台</p>
+    <h1 class="title">
+      PHP-GB28181
+    </h1>
+    <p class="subtitle">
+      安防监控系统演示平台
+    </p>
     
     <div class="modules-grid">
       <div 
@@ -48,7 +52,9 @@ const navigateTo = (path: string) => {
         class="module-card"
         @click="() => navigateTo(module.path)"
       >
-        <div class="icon">{{ module.icon }}</div>
+        <div class="icon">
+          {{ module.icon }}
+        </div>
         <h3>{{ module.title }}</h3>
         <p>{{ module.description }}</p>
       </div>

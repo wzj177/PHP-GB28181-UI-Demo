@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { ElCard, ElButton, ElTag, ElDialog } from 'element-plus'
+import { ElCard, ElButton, ElTag, ElDialog, ElMessage } from 'element-plus'
 import { Location, VideoCamera, MapLocation } from '@element-plus/icons-vue'
-import { deviceApi } from '@/api/deviceApi'
+import { mapApi } from '@/api/mapApi'
+import { gb28181Api } from '@/api/gb28181Api'
 
 declare global {
   interface Window {
@@ -66,64 +67,39 @@ const initMap = async () => {
 // Load devices
 const loadDevices = async () => {
   try {
-    // In a real app, this would call the API
-    // For demo, we'll use mock data
-    const mockResponse = {
-      data: [
-        {
-          id: 'device1',
-          name: '大厅IPC',
-          lng: 116.397428,
-          lat: 39.90923,
-          online: true,
-          status: 'normal',
-          address: '北京市东城区天安门广场'
-        },
-        {
-          id: 'device2',
-          name: '门口IPC',
-          lng: 116.407428,
-          lat: 39.91923,
-          online: true,
-          status: 'motion_detect',
-          address: '北京市东城区王府井大街'
-        },
-        {
-          id: 'device3',
-          name: '停车场IPC',
-          lng: 116.417428,
-          lat: 39.92923,
-          online: false,
-          status: 'alarm',
-          address: '北京市东城区东单北大街'
-        },
-        {
-          id: 'device4',
-          name: '办公楼IPC',
-          lng: 116.427428,
-          lat: 39.93923,
-          online: true,
-          status: 'alarm',
-          address: '北京市东城区朝阳门北大街'
-        },
-        {
-          id: 'device5',
-          name: '机房IPC',
-          lng: 116.387428,
-          lat: 39.89923,
-          online: true,
-          status: 'normal',
-          address: '北京市东城区前门大街'
-        }
-      ]
+    // Get device locations from the API
+    const response = await mapApi.getDeviceLocations();
+
+    let deviceData = [];
+    if (response.code === 0 && response.data) {
+      deviceData = response.data;
+    } else {
+      // Fallback: get devices from GB28181 API and use default coordinates
+      const devicesResponse = await gb28181Api.getDeviceList();
+      if (devicesResponse.code === 0) {
+        const devicesList = devicesResponse.data.list || devicesResponse.data || [];
+
+        // Assign default coordinates to devices for map display
+        deviceData = devicesList.map((device: any, index: number) => ({
+          id: device.device_id,
+          name: device.device_name || device.name || '未知设备',
+          lng: 116.397428 + (index * 0.01), // Distribute on map
+          lat: 39.90923 + (index * 0.01),
+          online: device.status === 'online',
+          status: device.status === 'online' ? 'normal' : 'offline',
+          address: device.address || '未知地址'
+        }));
+      }
     }
 
-    devices.value = mockResponse.data
+    devices.value = deviceData;
 
     // Remove existing markers
-    markers.value.forEach(marker => {
-      mapInstance.value.remove(marker)
-    })
+    if (mapInstance.value) {
+      markers.value.forEach(marker => {
+        mapInstance.value.remove(marker)
+      })
+    }
     markers.value = []
 
     // Add markers to the map
@@ -140,15 +116,15 @@ const loadDevices = async () => {
       const borderColor = device.online ? (device.status === 'alarm' ? '#F56C6C' : color) : '#909399'
 
       // Create SVG icon based on status
-      const fillColor = device.online ? (device.status === 'alarm' ? '#ffcccc' : color) : '#909399'
-      const svgIcon = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="36" viewBox="0 0 24 36"><path d="M12 0C5.373 0 0 5.373 0 12 0 22.5 12 36 12 36S24 22.5 24 12C24 5.373 18.627 0 12 0Z" fill="${fillColor}" stroke="${borderColor}" stroke-width="2"/></svg>`
+      const deviceFillColor = device.online ? (device.status === 'alarm' ? '#ffcccc' : color) : '#909399'
+      const deviceSvgIcon = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="36" viewBox="0 0 24 36"><path d="M12 0C5.373 0 0 5.373 0 12 0 22.5 12 36 12 36S24 22.5 24 12C24 5.373 18.627 0 12 0Z" fill="${deviceFillColor}" stroke="${borderColor}" stroke-width="2"/></svg>`
 
       const marker = new AMap.Marker({
         position: [device.lng, device.lat],
         title: device.name,
         icon: new AMap.Icon({
           size: new AMap.Size(24, 36),
-          image: svgIcon,
+          image: deviceSvgIcon,
         }),
         label: {
           content: device.name,
@@ -161,20 +137,24 @@ const loadDevices = async () => {
         handleDeviceClick(device)
       })
 
-      mapInstance.value.add(marker)
-      markers.value.push(marker)
+      if (mapInstance.value) {
+        mapInstance.value.add(marker)
+        markers.value.push(marker)
+      }
     })
 
     // Set map bounds to fit all markers
-    if (devices.value.length > 0) {
+    if (devices.value.length > 0 && mapInstance.value) {
       const bounds = new AMap.Bounds()
       devices.value.forEach(device => {
         bounds.extend([device.lng, device.lat])
       })
       mapInstance.value.setBounds(bounds)
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to load devices:', error)
+    // If the API call fails, we could show an error message or use mock data
+    ElMessage.error(error.message || '获取设备位置失败');
   }
 }
 
@@ -217,19 +197,16 @@ onUnmounted(() => {
 
 <template>
   <div class="map-page">
-    <div class="header">
-      <h2>
-        <MapLocation class="header-icon" />
-        电子地图
-      </h2>
-    </div>
 
     <ElCard class="map-card">
       <template #header>
         <div class="card-header">
           <span>设备分布图</span>
           <div class="map-controls">
-            <ElButton type="primary" size="small">
+            <ElButton
+              type="primary"
+              size="small"
+            >
               <Location class="control-icon" />
               定位
             </ElButton>
@@ -242,7 +219,11 @@ onUnmounted(() => {
       </template>
       
       <!-- Map container -->
-      <div id="map-container" class="map-container" v-loading="loading"></div>
+      <div
+        id="map-container"
+        v-loading="loading"
+        class="map-container"
+      />
     </ElCard>
 
     <!-- Player dialog -->
@@ -252,7 +233,10 @@ onUnmounted(() => {
       width="800px"
       :before-close="() => showPlayerDialog = false"
     >
-      <div v-if="selectedDevice" class="player-container">
+      <div
+        v-if="selectedDevice"
+        class="player-container"
+      >
         <div class="device-info">
           <h4>{{ selectedDevice.name }}</h4>
           <p><strong>地址:</strong> {{ selectedDevice.address }}</p>
@@ -270,11 +254,13 @@ onUnmounted(() => {
             controls
             :src="`https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4`"
             preload="metadata"
-          ></video>
+          />
         </div>
         
         <div class="player-controls">
-          <ElButton type="primary">云台控制</ElButton>
+          <ElButton type="primary">
+            云台控制
+          </ElButton>
           <ElButton>录像回放</ElButton>
           <ElButton>报警设置</ElButton>
         </div>

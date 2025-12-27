@@ -9,8 +9,8 @@ import {
   ElMessage,
   ElTag
 } from 'element-plus'
-import { Download } from '@element-plus/icons-vue'
-import { deviceApi } from '@/api/deviceApi'
+import { Download, Refresh } from '@element-plus/icons-vue'
+import { gb28181Api } from '@/api/gb28181Api'
 
 // Define recording interface
 interface Recording {
@@ -35,51 +35,46 @@ onMounted(() => {
 })
 
 const loadRecordings = async () => {
-  if (!deviceId.value) return
-  
+  if (!deviceId.value) {
+    console.log('⚠️ No deviceId, skipping loadRecordings')
+    return
+  }
+
   loading.value = true
   try {
-    // In a real app, this would call the API
-    // For demo, we'll use mock data
-    const mockResponse = {
-      data: [
-        {
-          id: 'rec1',
-          deviceId: deviceId.value,
-          channelId: 'ch1',
-          startTime: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-          endTime: new Date(Date.now() - 3000000).toISOString(), // 50 mins ago
-          duration: 10,
-          fileSize: '120MB',
-          type: 'motion' as const
-        },
-        {
-          id: 'rec2',
-          deviceId: deviceId.value,
-          channelId: 'ch1', 
-          startTime: new Date(Date.now() - 1800000).toISOString(), // 30 mins ago
-          endTime: new Date(Date.now() - 1200000).toISOString(), // 20 mins ago
-          duration: 10,
-          fileSize: '110MB',
-          type: 'manual' as const
-        },
-        {
-          id: 'rec3',
-          deviceId: deviceId.value,
-          channelId: 'ch2',
-          startTime: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
-          endTime: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-          duration: 60,
-          fileSize: '600MB',
-          type: 'schedule' as const
-        }
-      ]
+    // Get the current date range (e.g., last 24 hours)
+    const startTime = new Date()
+    startTime.setDate(startTime.getDate() - 1) // Last 24 hours
+    const endTime = new Date()
+
+    const params = {
+      device_id: deviceId.value,
+      start_time: startTime.toISOString(),
+      end_time: endTime.toISOString()
     }
 
-    recordings.value = mockResponse.data
-  } catch (error) {
-    console.error('Failed to fetch recordings:', error)
-    ElMessage.error('获取录像列表失败')
+    console.log('📼 Fetching recordings with params:', params)
+
+    const response = await gb28181Api.getRecordings(params)
+
+    console.log('📼 API response:', response)
+    console.log('📼 response.list:', response?.list)
+
+    if (response?.list) {
+      recordings.value = response.list || []
+      console.log('✅ Recordings loaded successfully:', recordings.value.length, 'items')
+    } else {
+      console.error('❌ API returned non-zero code:', response?.code, response?.message)
+      throw new Error(response?.message || '获取录像列表失败')
+    }
+  } catch (error: any) {
+    console.error('❌ Failed to fetch recordings:', error)
+    console.error('❌ Error details:', {
+      message: error.message,
+      stack: error.stack,
+      response: error.response?.data
+    })
+    ElMessage.error(error.message || '获取录像列表失败')
   } finally {
     loading.value = false
   }
@@ -111,52 +106,104 @@ const formatDate = (dateString: string) => {
 }
 
 // Download recording
-const downloadRecording = (recordingId: string) => {
-  console.log(`Downloading recording: ${recordingId}`)
-  ElMessage.success('下载开始')
+const downloadRecording = async (recordingId: string) => {
+  try {
+    const response = await gb28181Api.downloadRecording(recordingId);
+
+    if (response) {
+      // Create a blob from the response and trigger download
+      const blob = new Blob([response], { type: 'application/octet-stream' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `recording_${recordingId}.mp4`; // Set appropriate filename
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      ElMessage.success('下载开始');
+    } else {
+      ElMessage.error('下载失败');
+    }
+  } catch (error: any) {
+    console.error('Failed to download recording:', error);
+    ElMessage.error(error.message || '下载失败');
+  }
 }
 </script>
 
 <template>
-  <div class="recordings-list-page">
-    <div class="header">
+  <div class="recordings-list-container">
+    <div class="page-header">
       <h2>录像列表</h2>
+      <div class="header-actions">
+        <el-button
+          :loading="loading"
+          @click="loadRecordings"
+        >
+          <el-icon><Refresh /></el-icon>
+          刷新
+        </el-button>
+      </div>
     </div>
 
-    <div class="main-content">
+    <div class="stats-content">
       <!-- Recordings list -->
-      <ElCard class="recordings-card">
+      <ElCard class="stats-card full-width">
         <template #header>
-          <div class="card-header">
-            <span>录像列表</span>
+          <div class="card-title">
+            <span>录像记录</span>
           </div>
         </template>
 
         <ElTable
-          :data="recordings"
           v-loading="loading"
+          :data="recordings"
           style="width: 100%"
         >
-          <ElTableColumn prop="startTime" label="开始时间" width="180">
+          <ElTableColumn
+            prop="startTime"
+            label="开始时间"
+            width="180"
+          >
             <template #default="{ row }">
               {{ formatDate(row.startTime) }}
             </template>
           </ElTableColumn>
-          <ElTableColumn prop="endTime" label="结束时间" width="180">
+          <ElTableColumn
+            prop="endTime"
+            label="结束时间"
+            width="180"
+          >
             <template #default="{ row }">
               {{ formatDate(row.endTime) }}
             </template>
           </ElTableColumn>
-          <ElTableColumn prop="duration" label="时长(分钟)" width="120" />
-          <ElTableColumn prop="fileSize" label="文件大小" width="120" />
-          <ElTableColumn label="类型" width="120">
+          <ElTableColumn
+            prop="duration"
+            label="时长(分钟)"
+            width="120"
+          />
+          <ElTableColumn
+            prop="fileSize"
+            label="文件大小"
+            width="120"
+          />
+          <ElTableColumn
+            label="类型"
+            width="120"
+          >
             <template #default="{ row }">
               <ElTag :type="getRecordingTypeTagType(row.type)">
                 {{ getRecordingTypeLabel(row.type) }}
               </ElTag>
             </template>
           </ElTableColumn>
-          <ElTableColumn label="操作" width="120">
+          <ElTableColumn
+            label="操作"
+            width="120"
+          >
             <template #default="{ row }">
               <ElButton
                 size="small"
@@ -173,49 +220,63 @@ const downloadRecording = (recordingId: string) => {
   </div>
 </template>
 
-<style scoped>
-.recordings-list-page {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background-color: #f5f7fa;
-}
+<style scoped lang="scss">
+@use '@/styles/variables.scss' as *;
 
-.header {
-  padding: 1rem 1.5rem;
-  background: #fff;
-  border-bottom: 1px solid #e6e6e6;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
+.recordings-list-container {
+  padding: 20px;
+  background: var(--bg-hover);
+  min-height: 100%;
 
-.main-content {
-  flex: 1;
-  padding: 1rem;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: $spacing-md;
+    background: var(--bg-panel);
+    border-radius: $radius-panel;
+    border: 1px solid var(--border-base);
 
-.recordings-card {
-  flex: 1;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  border: 1px solid #e6e6e6;
-}
+    h2 {
+      margin: 0;
+      color: var(--text-main);
+      font-size: 18px;
+      font-weight: 600;
+    }
+  }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 1rem !important;
-  border-bottom: 1px solid #e6e6e6;
-  font-weight: 600;
-  color: #333;
-}
+  .stats-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 16px;
 
-:deep(.el-table) {
-  border-radius: 8px;
+    .stats-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-base);
+      border-radius: $radius-panel;
+
+      &.full-width {
+        grid-column: 1 / -1;
+      }
+
+      :deep(.el-card__header) {
+        background: var(--bg-hover);
+        border-bottom: 1px solid var(--border-base);
+        padding: 12px 16px;
+      }
+
+      :deep(.el-card__body) {
+        padding: 16px;
+      }
+
+      .card-title {
+        display: flex;
+        align-items: center;
+        font-weight: 500;
+        color: var(--text-main);
+      }
+    }
+  }
 }
 </style>

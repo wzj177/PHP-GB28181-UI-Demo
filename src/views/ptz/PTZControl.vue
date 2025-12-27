@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { ElTree, ElButton } from 'element-plus'
+import { ref, computed, onMounted } from 'vue'
+import { ElTree, ElButton, ElMessage } from 'element-plus'
 import PTZDialogNew from '@/components/ptz/PTZDialogNew.vue'
 import { Play, Monitor } from '@element-plus/icons-vue'
+import { gb28181Api } from '@/api/gb28181Api'
 
 interface DeviceNode {
   id: string
@@ -18,8 +19,9 @@ interface Channel {
   id: string
   name: string
   status: 'online' | 'offline' | 'motion_detect'
-  rtspUrl: string
+  rtspUrl?: string
   type: 'video-channel'
+  device_id?: string // Add device_id to link channel with device
 }
 
 // State
@@ -34,96 +36,160 @@ const activeLayout = ref<number>(1)
 // Layout options
 const layoutOptions = [1, 4, 6, 9]
 
-// Initialize device tree with mock data
-const loadDeviceTree = () => {
-  deviceTree.value = [
-    {
-      id: 'group1',
-      name: '监控区域A',
-      children: [
-        {
-          id: 'device1',
-          name: '大厅IPC',
-          online: true,
-          type: 'ipc',
-          status: 'online',
-          children: [
-            {
-              id: 'ch1-1',
-              name: '通道1',
-              status: 'online',
-              rtspUrl: 'rtsp://example.com/camera1',
-              type: 'video-channel'
-            },
-            {
-              id: 'ch1-2',
-              name: '通道2',
-              status: 'motion_detect',
-              rtspUrl: 'rtsp://example.com/camera2',
-              type: 'video-channel'
-            }
-          ]
-        },
-        {
-          id: 'device2',
-          name: '门口IPC',
-          online: true,
-          type: 'ipc',
-          status: 'online',
-          children: [
-            {
-              id: 'ch2-1',
-              name: '通道1',
-              status: 'online',
-              rtspUrl: 'rtsp://example.com/camera3',
-              type: 'video-channel'
-            }
-          ]
-        }
-      ]
-    },
-    {
-      id: 'group2',
-      name: '监控区域B',
-      children: [
-        {
-          id: 'device3',
-          name: '停车场IPC',
-          online: false,
-          type: 'ipc',
-          status: 'offline',
-          children: [
-            {
-              id: 'ch3-1',
-              name: '通道1',
-              status: 'offline',
-              rtspUrl: 'rtsp://example.com/camera4',
-              type: 'video-channel'
-            }
-          ]
-        }
-      ]
+// Load device tree from backend
+const loadDeviceTree = async () => {
+  try {
+    console.log('📼 Fetching device list for PTZ...')
+    const deviceResponse = await gb28181Api.getDeviceList();
+
+    console.log('📼 Device response:', deviceResponse)
+
+    // Handle different response structures
+    let devices: any[] = []
+
+    if (deviceResponse?.list) {
+      // Mock API returns { list: [...], paginator: {...} }
+      devices = deviceResponse.list
+    } else if (deviceResponse?.code === 0 && deviceResponse.data?.list) {
+      // Real API returns { code: 0, data: { list: [...] } }
+      devices = deviceResponse.data.list
+    } else if (deviceResponse?.code === 0 && Array.isArray(deviceResponse.data)) {
+      // Alternative: { code: 0, data: [...] }
+      devices = deviceResponse.data
+    } else if (Array.isArray(deviceResponse)) {
+      // Direct array response
+      devices = deviceResponse
+    } else if (deviceResponse?.code !== 0) {
+      throw new Error(deviceResponse.message || '获取设备列表失败');
     }
-  ]
+
+    console.log('📼 Parsed devices:', devices)
+
+    const treeData: DeviceNode[] = [];
+
+    // Group devices by manufacturer or other logical groupings
+    const groupedDevices: { [key: string]: any[] } = {};
+
+    devices.forEach((device: any) => {
+      const groupKey = device.manufacturer || 'Unknown';
+      if (!groupedDevices[groupKey]) {
+        groupedDevices[groupKey] = [];
+      }
+      groupedDevices[groupKey].push(device);
+    });
+
+    // Transform devices into tree structure
+    Object.entries(groupedDevices).forEach(([group, devices]) => {
+      const groupNode: DeviceNode = {
+        id: `group_${group}`,
+        name: group,
+        children: devices.map((device: any) => {
+          // Get channels for this device
+          return {
+            id: device.device_id,
+            name: device.device_name || device.name,
+            online: device.status === 'online',
+            type: 'ipc',
+            status: device.status === 'online' ? 'online' : 'offline',
+            children: [] // Will be populated with channels
+          };
+        })
+      };
+      treeData.push(groupNode);
+    });
+
+    deviceTree.value = treeData;
+
+    // Now, for each device, fetch its channels
+    for (const group of deviceTree.value) {
+      if (group.children) {
+        for (const deviceNode of group.children) {
+          try {
+            const channelResponse = await gb28181Api.getChannelList(deviceNode.id);
+
+            if (channelResponse.code === 0) {
+              const channels = channelResponse.data.channels || channelResponse.data;
+
+              // Update the device node with channels
+              if (Array.isArray(channels) && channels.length > 0) {
+                deviceNode.children = channels.map((channel: any) => ({
+                  id: channel.channel_id,
+                  name: channel.channel_name || channel.name,
+                  status: channel.status === 'streaming' ? 'online' :
+                         channel.status === 'motion_detect' ? 'motion_detect' : 'offline',
+                  type: 'video-channel',
+                  device_id: deviceNode.id
+                }));
+              } else {
+                deviceNode.children = [];
+              }
+            }
+          } catch (error) {
+            console.error(`获取设备 ${deviceNode.id} 通道失败:`, error);
+            // Set empty children if channels couldn't be loaded
+            deviceNode.children = [];
+          }
+        }
+      }
+    }
+  } catch (error: any) {
+    console.error('加载设备树失败:', error);
+    ElMessage.error(error.message || '获取设备列表失败');
+  }
 }
 
 // Handle node click in the tree
 const handleNodeClick = (data: DeviceNode | Channel) => {
-  // If the clicked node is a device with channels, auto-select the first channel
-  if ('channels' in data && data.channels && data.channels.length > 0) {
-    selectedChannel.value = data.channels[0].id
-  }
   // If the clicked node is a channel, select it
-  else if ('type' in data && data.type === 'video-channel') {
+  if ('type' in data && data.type === 'video-channel') {
     selectedChannel.value = data.id
   }
 }
 
 // Handle channel selection and play in active cell
-const handleSelectChannel = (channelId: string) => {
+const handleSelectChannel = async (channelId: string) => {
   if (activeCell.value !== null && activeCell.value >= 0) {
-    playingChannels.value[activeCell.value] = channelId
-    selectedChannel.value = channelId
+    // Find the device ID for this channel
+    let deviceId = '';
+    for (const group of deviceTree.value) {
+      if (group.children) {
+        for (const device of group.children) {
+          if (device.children) {
+            const channel = device.children.find((ch: Channel) => ch.id === channelId);
+            if (channel && channel.device_id) {
+              deviceId = channel.device_id;
+              break;
+            }
+          }
+        }
+        if (deviceId) break;
+      }
+    }
+
+    if (!deviceId) {
+      ElMessage.error('无法找到设备ID');
+      return;
+    }
+
+    try {
+      // Start the live stream using the GB28181 API
+      const response = await gb28181Api.startLive({
+        device_id: deviceId,
+        channel_id: channelId
+      });
+
+      if (response.code === 0) {
+        // Set the channel as playing in the selected cell
+        playingChannels.value[activeCell.value] = channelId;
+        selectedChannel.value = channelId;
+        ElMessage.success('视频播放开始');
+      } else {
+        ElMessage.error(response.message || '启动视频播放失败');
+      }
+    } catch (error: any) {
+      console.error('启动视频播放失败:', error);
+      ElMessage.error(error.message || '启动视频播放失败');
+    }
   }
 }
 
@@ -208,6 +274,20 @@ const getChannelName = (index: number) => {
   const findChannel = (nodes: (DeviceNode | Channel)[]): { deviceName: string, channelName: string } | null => {
     for (const node of nodes) {
       if ('type' in node && node.type === 'video-channel' && node.id === channelId) {
+        // Find the device name from the deviceTree
+        for (const group of deviceTree.value) {
+          if (group.children) {
+            for (const device of group.children) {
+              if (device.children) {
+                const foundChannel = device.children.find((ch: Channel) => ch.id === channelId);
+                if (foundChannel) {
+                  return { deviceName: device.name, channelName: node.name }
+                }
+              }
+            }
+          }
+        }
+        // If we couldn't find the device name, just return the channel name
         return { deviceName: '', channelName: node.name }
       }
       if ('children' in node && node.children) {
@@ -224,9 +304,15 @@ const getChannelName = (index: number) => {
   }
 
   for (const group of deviceTree.value) {
-    const result = findChannel(group.children || [])
-    if (result) {
-      return result.deviceName ? `${result.deviceName} - ${result.channelName}` : result.channelName
+    if (group.children) {
+      for (const device of group.children) {
+        if (device.children) {
+          const channel = device.children.find((ch: Channel) => ch.id === channelId);
+          if (channel) {
+            return `${device.name} - ${channel.name}`;
+          }
+        }
+      }
     }
   }
 
@@ -235,29 +321,26 @@ const getChannelName = (index: number) => {
 
 // Get channel status
 const getChannelStatus = (channelId: string) => {
-  const findChannelStatus = (nodes: (DeviceNode | Channel)[]): 'online' | 'offline' | 'motion_detect' | undefined => {
-    for (const node of nodes) {
-      if ('type' in node && node.type === 'video-channel' && node.id === channelId) {
-        return node.status
-      }
-      if ('children' in node && node.children) {
-        const status = findChannelStatus(node.children)
-        if (status) return status
+  for (const group of deviceTree.value) {
+    if (group.children) {
+      for (const device of group.children) {
+        if (device.children) {
+          const channel = device.children.find((ch: Channel) => ch.id === channelId);
+          if (channel) {
+            return channel.status
+          }
+        }
       }
     }
-    return undefined
-  }
-
-  for (const group of deviceTree.value) {
-    const status = findChannelStatus(group.children || [])
-    if (status) return status
   }
 
   return 'offline'
 }
 
 // Initialize on mount
-loadDeviceTree()
+onMounted(() => {
+  loadDeviceTree()
+})
 </script>
 
 <template>
@@ -269,42 +352,51 @@ loadDeviceTree()
         :props="{ children: 'children', label: 'name' }"
         node-key="id"
         :expand-on-click-node="false"
-        @node-click="handleNodeClick"
         default-expand-all
         :class="'device-tree'"
+        @node-click="handleNodeClick"
       >
         <template #default="{ node, data }">
-          <div class="tree-node" v-if="data.children">
+          <div
+            v-if="data.children"
+            class="tree-node"
+          >
             <!-- Device Group -->
             <div class="device-group">
               <span
                 class="status-dot"
                 :class="getStatusClass(data.status || 'offline')"
-              ></span>
+              />
               <span class="node-label">{{ data.name }}</span>
             </div>
           </div>
-          <div class="tree-node" v-else>
+          <div
+            v-else
+            class="tree-node"
+          >
             <!-- Device -->
-            <div class="device" v-if="data.type === 'ipc'">
+            <div
+              v-if="data.type === 'ipc'"
+              class="device"
+            >
               <span
                 class="status-dot"
                 :class="getStatusClass(data.status || 'offline')"
-              ></span>
+              />
               <span class="node-label">{{ data.name }}</span>
             </div>
 
             <!-- Channel -->
             <div
-              class="channel"
               v-else-if="data.type === 'video-channel'"
+              class="channel"
               @click.stop="handleSelectChannel(data.id)"
             >
               <div class="channel-left">
                 <span
                   class="status-dot"
                   :class="getStatusClass(data.status || 'offline')"
-                ></span>
+                />
                 <span class="node-label">{{ data.name }}</span>
               </div>
 
@@ -312,7 +404,7 @@ loadDeviceTree()
               <ElButton
                 v-if="data.type === 'video-channel'"
                 size="small"
-                type="primary"
+                type="primary"  
                 plain
                 @click.stop="showPTZControls(data.id)"
               >
@@ -339,7 +431,10 @@ loadDeviceTree()
       </div>
 
       <!-- Video grid -->
-      <div class="grid" :style="activeLayout === 6 ? {} : gridStyle">
+      <div
+        class="grid"
+        :style="activeLayout === 6 ? {} : gridStyle"
+      >
         <div
           v-for="index in currentLayout"
           :key="index"
@@ -350,7 +445,10 @@ loadDeviceTree()
           <div class="placeholder">
             {{ getChannelName(index - 1) }}
           </div>
-          <div class="ptz-float" v-if="activeCell === index - 1">
+          <div
+            v-if="activeCell === index - 1"
+            class="ptz-float"
+          >
             <ElButton 
               size="small" 
               type="primary" 
@@ -566,7 +664,7 @@ loadDeviceTree()
   top: 8px;
   right: 8px;
   background: rgba($bg-panel, 0.9);
-  border: 1px solid $border-light;
+  // border: 1px solid $border-light;
   border-radius: 8px;
   padding: 6px 10px;
   font-size: 12px;

@@ -70,54 +70,70 @@
             >
               ↘
             </div>
-            <div class="center">PTZ</div>
+            <div class="center">
+              PTZ
+            </div>
           </div>
 
           <div class="controls">
             <div class="row">
               <span class="label">速度</span>
-              <ElSlider v-model="speed" :min="1" :max="10" :step="1" show-stops />
+              <ElSlider
+                v-model="speed"
+                :min="1"
+                :max="10"
+                :step="1"
+                show-stops
+              />
             </div>
 
             <div class="btn-group">
               <ElButton
+                size="small"
                 @mousedown="startZoomCommand('tele')"
                 @mouseup="stopZoomCommand()"
-                size="small"
               >
                 变倍 +
               </ElButton>
               <ElButton
+                size="small"
                 @mousedown="startZoomCommand('wide')"
                 @mouseup="stopZoomCommand()"
-                size="small"
               >
                 变倍 −
               </ElButton>
-              <ElButton @click="focusCommand('auto')" size="small">
+              <ElButton
+                size="small"
+                @click="focusCommand('auto')"
+              >
                 自动对焦
               </ElButton>
               <ElButton
+                size="small"
                 @mousedown="startFocusCommand('far')"
                 @mouseup="stopFocusCommand()"
-                size="small"
               >
                 远焦
               </ElButton>
               <ElButton
+                size="small"
                 @mousedown="startFocusCommand('near')"
                 @mouseup="stopFocusCommand()"
-                size="small"
               >
                 近焦
               </ElButton>
-              <ElButton @click="irisCommand('open')" size="small">
+              <ElButton
+                size="small"
+                @click="irisCommand('open')"
+              >
                 光圈
               </ElButton>
             </div>
 
             <div class="voice-speak">
-              <h3 style="margin-top: 16px">语音对讲</h3>
+              <h3 style="margin-top: 16px">
+                语音对讲
+              </h3>
               <div class="talk">
                 <ElButton
                   type="primary"
@@ -141,14 +157,32 @@
       <!-- 预置位 -->
       <div class="panel">
         <h3>预置位（1–255）</h3>
-        <div class="preset-list" id="presetList">
-          <div v-for="i in 255" :key="i" class="preset">
+        <div
+          id="presetList"
+          class="preset-list"
+        >
+          <div
+            v-for="i in 255"
+            :key="i"
+            class="preset"
+          >
             <span>{{
               presetNames[i] ? i + " · " + presetNames[i] : i + " · 未设置"
             }}</span>
             <div>
-              <ElButton @click="gotoPreset(i)" size="small" type="primary">调用</ElButton>
-              <ElButton @click="setPreset(i)" size="small">设置</ElButton>
+              <ElButton
+                size="small"
+                type="primary"
+                @click="gotoPreset(i)"
+              >
+                调用
+              </ElButton>
+              <ElButton
+                size="small"
+                @click="setPreset(i)"
+              >
+                设置
+              </ElButton>
             </div>
           </div>
         </div>
@@ -156,17 +190,35 @@
     </div>
 
     <!-- 巡航 -->
-    <div class="panel" style="width: 100%; margin-top: 16px;">
+    <div
+      class="panel"
+      style="width: 100%; margin-top: 16px;"
+    >
       <ElRow>
         <ElCol :span="12">
-          <h3 style="margin-top: 0;">巡航（Cruise）</h3>
+          <h3 style="margin-top: 0;">
+            巡航（Cruise）
+          </h3>
           <div class="controls">
             <div class="row">
               <span class="label">巡航号</span>
-              <ElSelect v-model="cruiseId" @change="loadCruisePoints()" size="small">
-                <ElOption value="1" label="巡航 1" />
-                <ElOption value="2" label="巡航 2" />
-                <ElOption value="3" label="巡航 3" />
+              <ElSelect
+                v-model="cruiseId"
+                size="small"
+                @change="loadCruisePoints()"
+              >
+                <ElOption
+                  value="1"
+                  label="巡航 1"
+                />
+                <ElOption
+                  value="2"
+                  label="巡航 2"
+                />
+                <ElOption
+                  value="3"
+                  label="巡航 3"
+                />
               </ElSelect>
             </div>
 
@@ -191,23 +243,47 @@
             </div>
 
             <div class="btn-group">
-              <ElButton @click="addToCruise()" type="primary">加入巡航</ElButton>
-              <ElButton @click="startCruise()" type="success">开始巡航</ElButton>
-              <ElButton @click="stopCruise()" type="danger">停止巡航</ElButton>
+              <ElButton
+                type="primary"
+                @click="addToCruise()"
+              >
+                加入巡航
+              </ElButton>
+              <ElButton
+                type="success"
+                @click="startCruise()"
+              >
+                开始巡航
+              </ElButton>
+              <ElButton
+                type="danger"
+                @click="stopCruise()"
+              >
+                停止巡航
+              </ElButton>
             </div>
           </div>
         </ElCol>
         <ElCol :span="12">
           <div style="margin-top: 0;">
             <h3>巡航点列表</h3>
-            <div class="preset-list" id="cruisePointList">
+            <div
+              id="cruisePointList"
+              class="preset-list"
+            >
               <div
                 v-for="(point, index) in cruisePoints"
                 :key="index"
                 class="preset"
               >
                 <span>预置位 {{ point }} - 位置 {{ index + 1 }}</span>
-                <ElButton @click="removeFromCruise(index)" size="small" type="danger">移除</ElButton>
+                <ElButton
+                  size="small"
+                  type="danger"
+                  @click="removeFromCruise(index)"
+                >
+                  移除
+                </ElButton>
               </div>
             </div>
           </div>
@@ -229,6 +305,7 @@ import {
   ElCol,
   ElMessage
 } from 'element-plus';
+import { gb28181Api } from '@/api/gb28181Api';
 
 // Define props for component communication
 interface Props {
@@ -253,89 +330,449 @@ const cruisePoints = ref<number[]>([]);
 const isTalkActive = ref(false);
 
 // PTZ control functions
-const startPtzCommand = (direction: string) => {
-  ElMessage.info(`开始 ${direction} 方向 PTZ 控制`);
-  console.log(
-    `START_PTZ_${direction.toUpperCase()}`,
-    speed.value,
-    props.channelId
-  );
-  // Send PTZ command to backend/api
+const startPtzCommand = async (direction: string) => {
+  // Extract device_id from channelId (format is typically device_id:channel_id)
+  if (!props.channelId) {
+    ElMessage.error('未指定通道ID');
+    return;
+  }
+
+  // Split the channelId to get device_id and channel_id
+  // Assuming the format is {device_id}-{channel_id} or similar
+  const parts = props.channelId.split('-');
+  if (parts.length < 2) {
+    ElMessage.error('无效的通道ID格式');
+    return;
+  }
+
+  const deviceId = parts[0];
+  const channelId = props.channelId; // Or use the second part if needed
+
+  try {
+    const response = await gb28181Api.ptz.control({
+      device_id: deviceId,
+      channel_id: channelId,
+      command: direction,
+      speed: speed.value
+    });
+
+    if (response.code === 0) {
+      ElMessage.success(`开始 ${direction} 方向 PTZ 控制`);
+    } else {
+      ElMessage.error(response.message || `PTZ 控制失败: ${direction}`);
+    }
+  } catch (error: any) {
+    console.error('PTZ 控制命令发送失败:', error);
+    ElMessage.error(error.message || `发送 PTZ 控制命令失败: ${direction}`);
+  }
 };
 
-const stopPtzCommand = () => {
-  ElMessage.info("停止 PTZ 控制");
-  console.log("STOP_PTZ_COMMAND", props.channelId);
-  // Send stop command to backend/api
+const stopPtzCommand = async () => {
+  if (!props.channelId) {
+    ElMessage.error('未指定通道ID');
+    return;
+  }
+
+  // Split the channelId to get device_id
+  const parts = props.channelId.split('-');
+  if (parts.length < 2) {
+    ElMessage.error('无效的通道ID格式');
+    return;
+  }
+
+  const deviceId = parts[0];
+  const channelId = props.channelId;
+
+  try {
+    const response = await gb28181Api.ptz.control({
+      device_id: deviceId,
+      channel_id: channelId,
+      command: 'stop'
+    });
+
+    if (response.code === 0) {
+      ElMessage.success('停止 PTZ 控制');
+    } else {
+      ElMessage.error(response.message || '停止 PTZ 控制失败');
+    }
+  } catch (error: any) {
+    console.error('停止 PTZ 控制命令发送失败:', error);
+    ElMessage.error(error.message || '发送停止 PTZ 控制命令失败');
+  }
 };
 
-const startZoomCommand = (zoomDirection: string) => {
-  ElMessage.info(`开始变倍 ${zoomDirection}`);
-  console.log(`START_ZOOM_${zoomDirection.toUpperCase()}`, props.channelId);
-  // Send zoom command to backend/api
+const startZoomCommand = async (zoomDirection: string) => {
+  if (!props.channelId) {
+    ElMessage.error('未指定通道ID');
+    return;
+  }
+
+  const parts = props.channelId.split('-');
+  if (parts.length < 2) {
+    ElMessage.error('无效的通道ID格式');
+    return;
+  }
+
+  const deviceId = parts[0];
+  const channelId = props.channelId;
+
+  try {
+    const response = await gb28181Api.ptz.control({
+      device_id: deviceId,
+      channel_id: channelId,
+      command: zoomDirection === 'tele' ? 'zoom_in' : 'zoom_out',
+      speed: speed.value
+    });
+
+    if (response.code === 0) {
+      ElMessage.success(`开始变倍 ${zoomDirection}`);
+    } else {
+      ElMessage.error(response.message || `变倍控制失败: ${zoomDirection}`);
+    }
+  } catch (error: any) {
+    console.error('变倍控制命令发送失败:', error);
+    ElMessage.error(error.message || `发送变倍控制命令失败: ${zoomDirection}`);
+  }
 };
 
-const stopZoomCommand = () => {
-  ElMessage.info("停止变倍");
-  console.log("STOP_ZOOM_COMMAND", props.channelId);
-  // Send stop zoom command to backend/api
+const stopZoomCommand = async () => {
+  if (!props.channelId) {
+    ElMessage.error('未指定通道ID');
+    return;
+  }
+
+  const parts = props.channelId.split('-');
+  if (parts.length < 2) {
+    ElMessage.error('无效的通道ID格式');
+    return;
+  }
+
+  const deviceId = parts[0];
+  const channelId = props.channelId;
+
+  try {
+    const response = await gb28181Api.ptz.control({
+      device_id: deviceId,
+      channel_id: channelId,
+      command: 'stop',
+      speed: speed.value
+    });
+
+    if (response.code === 0) {
+      ElMessage.success('停止变倍');
+    } else {
+      ElMessage.error(response.message || '停止变倍控制失败');
+    }
+  } catch (error: any) {
+    console.error('停止变倍控制命令发送失败:', error);
+    ElMessage.error(error.message || '发送停止变倍控制命令失败');
+  }
 };
 
-const focusCommand = (focusType: string) => {
-  ElMessage.info(`${focusType} 对焦`);
-  console.log(`FOCUS_${focusType.toUpperCase()}`, props.channelId);
-  // Send focus command to backend/api
+const focusCommand = async (focusType: string) => {
+  if (!props.channelId) {
+    ElMessage.error('未指定通道ID');
+    return;
+  }
+
+  const parts = props.channelId.split('-');
+  if (parts.length < 2) {
+    ElMessage.error('无效的通道ID格式');
+    return;
+  }
+
+  const deviceId = parts[0];
+  const channelId = props.channelId;
+
+  let command: string;
+  switch (focusType) {
+    case 'auto':
+      command = 'focus_auto';
+      break;
+    default:
+      command = 'focus_stop';
+  }
+
+  try {
+    const response = await gb28181Api.ptz.control({
+      device_id: deviceId,
+      channel_id: channelId,
+      command: command,
+      speed: speed.value
+    });
+
+    if (response.code === 0) {
+      ElMessage.success(`${focusType} 对焦`);
+    } else {
+      ElMessage.error(response.message || `对焦控制失败: ${focusType}`);
+    }
+  } catch (error: any) {
+    console.error('对焦控制命令发送失败:', error);
+    ElMessage.error(error.message || `发送对焦控制命令失败: ${focusType}`);
+  }
 };
 
-const startFocusCommand = (focusDirection: string) => {
-  ElMessage.info(`开始 ${focusDirection} 对焦`);
-  console.log(`START_FOCUS_${focusDirection.toUpperCase()}`, props.channelId);
-  // Send focus command to backend/api
+const startFocusCommand = async (focusDirection: string) => {
+  if (!props.channelId) {
+    ElMessage.error('未指定通道ID');
+    return;
+  }
+
+  const parts = props.channelId.split('-');
+  if (parts.length < 2) {
+    ElMessage.error('无效的通道ID格式');
+    return;
+  }
+
+  const deviceId = parts[0];
+  const channelId = props.channelId;
+
+  let command: string;
+  switch (focusDirection) {
+    case 'far':
+      command = 'focus_far';
+      break;
+    case 'near':
+      command = 'focus_near';
+      break;
+    default:
+      command = 'focus_stop';
+  }
+
+  try {
+    const response = await gb28181Api.ptz.control({
+      device_id: deviceId,
+      channel_id: channelId,
+      command: command,
+      speed: speed.value
+    });
+
+    if (response.code === 0) {
+      ElMessage.success(`开始 ${focusDirection} 对焦`);
+    } else {
+      ElMessage.error(response.message || `对焦控制失败: ${focusDirection}`);
+    }
+  } catch (error: any) {
+    console.error('对焦控制命令发送失败:', error);
+    ElMessage.error(error.message || `发送对焦控制命令失败: ${focusDirection}`);
+  }
 };
 
-const stopFocusCommand = () => {
-  ElMessage.info("停止对焦");
-  console.log("STOP_FOCUS_COMMAND", props.channelId);
-  // Send stop focus command to backend/api
+const stopFocusCommand = async () => {
+  if (!props.channelId) {
+    ElMessage.error('未指定通道ID');
+    return;
+  }
+
+  const parts = props.channelId.split('-');
+  if (parts.length < 2) {
+    ElMessage.error('无效的通道ID格式');
+    return;
+  }
+
+  const deviceId = parts[0];
+  const channelId = props.channelId;
+
+  try {
+    const response = await gb28181Api.ptz.control({
+      device_id: deviceId,
+      channel_id: channelId,
+      command: 'focus_stop',
+      speed: speed.value
+    });
+
+    if (response.code === 0) {
+      ElMessage.success('停止对焦');
+    } else {
+      ElMessage.error(response.message || '停止对焦控制失败');
+    }
+  } catch (error: any) {
+    console.error('停止对焦控制命令发送失败:', error);
+    ElMessage.error(error.message || '发送停止对焦控制命令失败');
+  }
 };
 
-const irisCommand = (irisType: string) => {
-  ElMessage.info(`光圈 ${irisType}`);
-  console.log(`IRIS_${irisType.toUpperCase()}`, props.channelId);
-  // Send iris command to backend/api
+const irisCommand = async (irisType: string) => {
+  if (!props.channelId) {
+    ElMessage.error('未指定通道ID');
+    return;
+  }
+
+  const parts = props.channelId.split('-');
+  if (parts.length < 2) {
+    ElMessage.error('无效的通道ID格式');
+    return;
+  }
+
+  const deviceId = parts[0];
+  const channelId = props.channelId;
+
+  let command: string;
+  switch (irisType) {
+    case 'open':
+      command = 'iris_open';
+      break;
+    case 'close':
+      command = 'iris_close';
+      break;
+    default:
+      command = 'iris_stop';
+  }
+
+  try {
+    const response = await gb28181Api.ptz.control({
+      device_id: deviceId,
+      channel_id: channelId,
+      command: command,
+      speed: speed.value
+    });
+
+    if (response.code === 0) {
+      ElMessage.success(`光圈 ${irisType}`);
+    } else {
+      ElMessage.error(response.message || `光圈控制失败: ${irisType}`);
+    }
+  } catch (error: any) {
+    console.error('光圈控制命令发送失败:', error);
+    ElMessage.error(error.message || `发送光圈控制命令失败: ${irisType}`);
+  }
 };
 
 // Preset functions
-const gotoPreset = (id: number) => {
-  ElMessage.info(`调用预置位 ${id}`);
-  console.log("GOTO_PRESET", id, props.channelId);
-  // Send GB28181 call preset command
+const gotoPreset = async (id: number) => {
+  if (!props.channelId) {
+    ElMessage.error('未指定通道ID');
+    return;
+  }
+
+  const parts = props.channelId.split('-');
+  if (parts.length < 2) {
+    ElMessage.error('无效的通道ID格式');
+    return;
+  }
+
+  const deviceId = parts[0];
+  const channelId = props.channelId;
+
+  try {
+    const response = await gb28181Api.ptz.control({
+      device_id: deviceId,
+      channel_id: channelId,
+      command: 'goto_preset',
+      speed: id  // Using speed field to pass preset ID
+    });
+
+    if (response.code === 0) {
+      ElMessage.success(`调用预置位 ${id}`);
+    } else {
+      ElMessage.error(response.message || `调用预置位 ${id} 失败`);
+    }
+  } catch (error: any) {
+    console.error(`调用预置位 ${id} 失败:`, error);
+    ElMessage.error(error.message || `调用预置位 ${id} 失败`);
+  }
 };
 
-const setPreset = (id: number) => {
-  ElMessage.info(`设置预置位 ${id}`);
-  console.log("SET_PRESET", id, props.channelId);
-  // Send GB28181 set preset command
+const setPreset = async (id: number) => {
+  if (!props.channelId) {
+    ElMessage.error('未指定通道ID');
+    return;
+  }
+
+  const parts = props.channelId.split('-');
+  if (parts.length < 2) {
+    ElMessage.error('无效的通道ID格式');
+    return;
+  }
+
+  const deviceId = parts[0];
+  const channelId = props.channelId;
+
+  try {
+    const response = await gb28181Api.ptz.control({
+      device_id: deviceId,
+      channel_id: channelId,
+      command: 'set_preset',
+      speed: id  // Using speed field to pass preset ID
+    });
+
+    if (response.code === 0) {
+      ElMessage.success(`设置预置位 ${id}`);
+    } else {
+      ElMessage.error(response.message || `设置预置位 ${id} 失败`);
+    }
+  } catch (error: any) {
+    console.error(`设置预置位 ${id} 失败:`, error);
+    ElMessage.error(error.message || `设置预置位 ${id} 失败`);
+  }
 };
 
 // Cruise functions
-const loadCruisePoints = () => {
-  ElMessage.info("加载巡航点");
+const loadCruisePoints = async () => {
+  if (!props.channelId) {
+    ElMessage.error('未指定通道ID');
+    return;
+  }
+
+  // For now, just show a message that loading is simulated
+  ElMessage.info("加载巡航点（模拟）");
   console.log("LOAD_CRUISE_POINTS", cruiseId.value, props.channelId);
-  // Load saved cruise points from backend
+  // This would load saved cruise points from backend when implemented
 };
 
 const addToCruise = (id: number = 1) => {
+  if (!props.channelId) {
+    ElMessage.error('未指定通道ID');
+    return;
+  }
+
   // Simple implementation - in reality, this would add the current preset
-  // For now we'll just simulate adding presets to the cruise
+  // For now we'll just add presets to the array
   const nextPreset = (cruisePoints.value.length + 1) % 255;
   cruisePoints.value.push(nextPreset || 1);
   ElMessage.success(`添加预置位 ${nextPreset} 到巡航`);
   console.log("ADD_TO_CRUISE", nextPreset, props.channelId);
 };
 
-const startCruise = () => {
-  ElMessage.success("开始巡航");
+const startCruise = async () => {
+  if (!props.channelId) {
+    ElMessage.error('未指定通道ID');
+    return;
+  }
+
+  if (cruisePoints.value.length === 0) {
+    ElMessage.warning('请先添加预置位到巡航');
+    return;
+  }
+
+  // Extract device_id from channelId
+  const parts = props.channelId.split('-');
+  if (parts.length < 2) {
+    ElMessage.error('无效的通道ID格式');
+    return;
+  }
+
+  const deviceId = parts[0];
+  const channelId = props.channelId;
+
+  try {
+    const response = await gb28181Api.ptz.control({
+      device_id: deviceId,
+      channel_id: channelId,
+      command: 'start_cruise',
+      speed: cruiseSpeed.value
+    });
+
+    if (response.code === 0) {
+      ElMessage.success("开始巡航");
+    } else {
+      ElMessage.error(response.message || "开始巡航失败");
+    }
+  } catch (error: any) {
+    console.error('开始巡航失败:', error);
+    ElMessage.error(error.message || "开始巡航失败");
+  }
+
   console.log("START_CRUISE", {
     id: cruiseId.value,
     stay: cruiseStay.value,
@@ -343,13 +780,42 @@ const startCruise = () => {
     points: cruisePoints.value,
     channelId: props.channelId,
   });
-  // Send start cruise command to backend
 };
 
-const stopCruise = () => {
-  ElMessage.warning("停止巡航");
+const stopCruise = async () => {
+  if (!props.channelId) {
+    ElMessage.error('未指定通道ID');
+    return;
+  }
+
+  // Extract device_id from channelId
+  const parts = props.channelId.split('-');
+  if (parts.length < 2) {
+    ElMessage.error('无效的通道ID格式');
+    return;
+  }
+
+  const deviceId = parts[0];
+  const channelId = props.channelId;
+
+  try {
+    const response = await gb28181Api.ptz.control({
+      device_id: deviceId,
+      channel_id: channelId,
+      command: 'stop_cruise'
+    });
+
+    if (response.code === 0) {
+      ElMessage.success("停止巡航");
+    } else {
+      ElMessage.error(response.message || "停止巡航失败");
+    }
+  } catch (error: any) {
+    console.error('停止巡航失败:', error);
+    ElMessage.error(error.message || "停止巡航失败");
+  }
+
   console.log("STOP_CRUISE", props.channelId);
-  // Send stop cruise command to backend
 };
 
 const removeFromCruise = (index: number) => {
@@ -363,7 +829,7 @@ const startTalk = () => {
   isTalkActive.value = true;
   ElMessage.success("开始对讲");
   console.log("START_TALK", props.channelId);
-  // Start audio streaming
+  // Start audio streaming - this would require additional implementation
 };
 
 const stopTalk = () => {

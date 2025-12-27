@@ -1,0 +1,232 @@
+{
+  "menus": [
+    {
+      "id": "dashboard",
+      "name": "仪表盘",
+      "icon": "House",
+      "path": "/dashboard",
+      "component": "Dashboard",
+      "title": "仪表盘",
+      "parentId": 0,
+      "sort": 1,
+      "type": "menu"
+    },
+    {
+      "id": "monitoring",
+      "name": "系统监控",
+      "icon": "Monitor",
+      "path": "/system-monitor",
+      "component": "SystemMonitor",
+      "title": "系统监控",
+      "parentId": 0,
+      "sort": 2,
+      "type": "directory",
+      "children": [
+        {
+          "id": "system-stats",
+          "name": "系统统计",
+          "icon": "DataAnalysis",
+          "path": "/system-stats",
+          "component": "SystemStats",
+          "title": "系统统计",
+          "parentId": "monitoring",
+          "sort": 1,
+          "type": "menu"
+        },
+        {
+          "id": "zlm-stats",
+          "name": "流媒体网关",
+          "icon": "VideoCamera",
+          "path": "/zlm-stats",
+          "component": "ZLMStats",
+          "title": "流媒体网关",
+          "parentId": "monitoring",
+          "sort": 2,
+          "type": "menu"
+        },
+        {
+          "id": "device-stats",
+          "name": "设备统计",
+          "icon": "Monitor",
+          "path": "/device-stats",
+          "component": "DeviceStats",
+          "title": "设备统计",
+          "parentId": "monitoring",
+          "sort": 3,
+          "type": "menu"
+        }
+      ]
+    },
+    {
+      "id": "system",
+      "name": "系统管理",
+      "icon": "Setting",
+      "path": "/system",
+      "component": "",
+      "title": "系统管理",
+      "parentId": 0,
+      "sort": 3,
+      "type": "directory",
+      "children": [
+        {
+          "id": "system-logs",
+          "name": "系统日志",
+          "icon": "Document",
+          "path": "/system-logs",
+          "component": "SystemLogs",
+          "title": "系统日志",
+          "parentId": "system",
+          "sort": 1,
+          "type": "menu"
+        },
+        {
+          "id": "system-settings",
+          "name": "系统设置",
+          "icon": "Tools",
+          "path": "/system-settings",
+          "component": "SystemSettings",
+          "title": "系统设置",
+          "parentId": "system",
+          "sort": 2,
+          "type": "menu"
+        },
+        {
+          "id": "zlm-config",
+          "name": "ZLM配置",
+          "icon": "Connection",
+          "path": "/zlm-config",
+          "component": "ZLMConfig",
+          "title": "ZLM配置",
+          "parentId": "system",
+          "sort": 3,
+          "type": "menu"
+        }
+      ]
+    },
+    {
+      "id": "permission",
+      "name": "权限管理",
+      "icon": "Lock",
+      "path": "/permission",
+      "component": "",
+      "title": "权限管理",
+      "parentId": 0,
+      "sort": 4,
+      "type": "directory",
+      "children": [
+        {
+          "id": "user-management",
+          "name": "用户管理",
+          "icon": "User",
+          "path": "/user-management",
+          "component": "UserManagement",
+          "title": "用户管理",
+          "parentId": "permission",
+          "sort": 1,
+          "type": "menu"
+        },
+        {
+          "id": "role-management",
+          "name": "角色管理",
+          "icon": "UserFilled",
+          "path": "/role-management",
+          "component": "RoleManagement",
+          "title": "角色管理",
+          "parentId": "permission",
+          "sort": 2,
+          "type": "menu"
+        },
+        {
+          "id": "menu-management",
+          "name": "菜单管理",
+          "icon": "Menu",
+          "path": "/menu-management",
+          "component": "MenuManagement",
+          "title": "菜单管理",
+          "parentId": "permission",
+          "sort": 3,
+          "type": "menu"
+        }
+      ]
+    },
+    {
+      "id": "ptz-control",
+      "name": "云台控制",
+      "icon": "VideoCamera",
+      "path": "/ptz-control",
+      "component": "PTZControl",
+      "title": "云台控制",
+      "parentId": 0,
+      "sort": 5,
+      "type": "menu"
+    },
+    {
+      "id": "video",
+      "name": "视频管理",
+      "icon": "VideoPlay",
+      "path": "/video",
+      "component": "VideoManagement",
+      "title": "视频管理",
+      "parentId": 0,
+      "sort": 6,
+      "type": "directory",
+      "children": [
+        {
+          "id": "video-list",
+          "name": "录像回放",
+          "icon": "VideoCamera",
+          "path": "/video-list",
+          "component": "VideoPlayback",
+          "title": "录像回放",
+          "parentId": "video",
+          "sort": 1,
+          "type": "menu"
+        },
+        {
+          "id": "video-player",
+          "name": "视频播放",
+          "icon": "Play",
+          "path": "/video-playback/:deviceId",
+          "component": "VideoTimeline",
+          "title": "视频播放",
+          "parentId": "video",
+          "sort": 2,
+          "type": "path"
+        },
+        {
+          "id": "recordings-list",
+          "name": "录像列表",
+          "icon": "Film",
+          "path": "/video-recordings/:deviceId",
+          "component": "RecordingsList",
+          "title": "录像列表",
+          "parentId": "video",
+          "sort": 3,
+          "type": "menu"
+        }
+      ]
+    },
+    {
+      "id": "alarms",
+      "name": "报警管理",
+      "icon": "Bell",
+      "path": "/alarms",
+      "component": "AlarmManagement",
+      "title": "报警管理",
+      "parentId": 0,
+      "sort": 7,
+      "type": "menu"
+    },
+    {
+      "id": "map",
+      "name": "电子地图",
+      "icon": "MapLocation",
+      "path": "/map",
+      "component": "ElectronicMap",
+      "title": "电子地图",
+      "parentId": 0,
+      "sort": 8,
+      "type": "menu"
+    }
+  ]
+}
