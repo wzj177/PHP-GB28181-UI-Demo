@@ -44,7 +44,7 @@ export const pages: Record<string, () => Promise<any>> = {
 
   // 系统管理
   'SystemLogs': () => import('@/views/system/SystemLogs.vue'),
-  'SystemSettings': () => import('@/views/system/SystemSettings.vue'),
+  'SystemSettings': () => import('@/views/system/setting/index.vue'),
   'ZLMConfig': () => import('@/views/system/ZLMConfig.vue'),
 
   // 权限管理

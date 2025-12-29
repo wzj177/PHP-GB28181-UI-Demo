@@ -9,9 +9,9 @@
 ### 错误信息
 
 ```
-GET http://127.0.0.1:8886/admin/api/system/device-stats 404 (Not Found)
-GET http://127.0.0.1:8886/admin/api/system/stats 404 (Not Found)
-GET http://127.0.0.1:8886/admin/api/system/zlm-stats 404 (Not Found)
+GET http://127.0.0.1:8886/api/admin/system/device-stats 404 (Not Found)
+GET http://127.0.0.1:8886/api/admin/system/stats 404 (Not Found)
+GET http://127.0.0.1:8886/api/admin/system/zlm-stats 404 (Not Found)
 ```
 
 ### 前端配置
@@ -24,20 +24,20 @@ VITE_API_BASE_URL=http://127.0.0.1:8886/admin
 **API 调用** (`src/api/monitorApi.ts`)
 ```typescript
 getSystemStats: () => {
-  return request.get('/api/system/stats');
+  return request.get('/system/stats');
 },
 getDeviceStats: () => {
-  return request.get('/api/system/device-stats');
+  return request.get('/system/device-stats');
 },
 getZLMediaKitStats: () => {
-  return request.get('/api/system/zlm-stats');
+  return request.get('/system/zlm-stats');
 }
 ```
 
 **最终请求路径**
-- `http://127.0.0.1:8886/admin/api/system/stats`
-- `http://127.0.0.1:8886/admin/api/system/device-stats`
-- `http://127.0.0.1:8886/admin/api/system/zlm-stats`
+- `http://127.0.0.1:8886/api/admin/system/stats`
+- `http://127.0.0.1:8886/api/admin/system/device-stats`
+- `http://127.0.0.1:8886/api/admin/system/zlm-stats`
 
 ### 后端配置检查
 
@@ -46,18 +46,18 @@ getZLMediaKitStats: () => {
 运行 `php webman route:list` 显示以下路由存在：
 
 ```
-| /admin/api/system/stats           | GET  | SystemMonitoringController::getSystemStats
-| /admin/api/system/device-stats    | GET  | SystemMonitoringController::getDeviceStats
-| /admin/api/system/zlm-stats       | GET  | SystemMonitoringController::getZLMediaKitStats
+| /api/admin/system/stats           | GET  | SystemMonitoringController::getSystemStats
+| /api/admin/system/device-stats    | GET  | SystemMonitoringController::getDeviceStats
+| /api/admin/system/zlm-stats       | GET  | SystemMonitoringController::getZLMediaKitStats
 ```
 
 #### 2. 路由配置文件
 
-**文件**: `app/admin/config/routes/index.php`
+**文件**: `app/api/admin/config/routes/index.php`
 
 ```php
 Route::group('/admin', function () {
-    Route::group('/api/system', function () {
+    Route::group('/system', function () {
         Route::get('/stats', [SystemMonitoringController::class, 'getSystemStats'])->name('admin.api.system.stats');
         Route::get('/device-stats', [SystemMonitoringController::class, 'getDeviceStats'])->name('admin.api.system.device-stats');
         Route::get('/zlm-stats', [SystemMonitoringController::class, 'getZLMediaKitStats'])->name('admin.api.system.zlm-stats');
@@ -68,7 +68,7 @@ Route::group('/admin', function () {
 
 #### 3. 控制器文件
 
-**文件**: `app/admin/controller/SystemMonitoringController.php`
+**文件**: `app/api/admin/controller/SystemMonitoringController.php`
 
 控制器已实现以下方法：
 - `getSystemStats()` - 系统统计
@@ -103,7 +103,7 @@ Route::group('/admin', function () {
    ```bash
    # 使用 curl 测试（需要携带认证 token）
    curl -H "Authorization: Bearer YOUR_TOKEN" \
-        http://127.0.0.1:8886/admin/api/system/stats
+        http://127.0.0.1:8886/api/admin/system/stats
    ```
 
 5. **检查依赖服务**
@@ -137,6 +137,6 @@ Route::group('/admin', function () {
 详细的接口规范请参考：`docs/api-stats.md`
 
 主要接口：
-- `GET /admin/api/system/stats` - 系统资源统计
-- `GET /admin/api/system/device-stats` - 设备统计
-- `GET /admin/api/system/zlm-stats` - ZLMediaKit 统计
+- `GET /api/admin/system/stats` - 系统资源统计
+- `GET /api/admin/system/device-stats` - 设备统计
+- `GET /api/admin/system/zlm-stats` - ZLMediaKit 统计

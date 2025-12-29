@@ -26,7 +26,13 @@ export default defineConfig(({ mode }) => {
       }
     },
     server: {
-      port: 3230
+      port: 3230,
+      proxy: {
+        '/api': {
+          target: 'http://127.0.0.1:8886',
+          changeOrigin: true
+        }
+      }
     }
   }
 })

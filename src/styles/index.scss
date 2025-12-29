@@ -181,6 +181,14 @@ body {
   color: var(--text-main);
 }
 
+.el-input__inner {
+  &:focus {
+     box-shadow: none !important;
+  }
+}
+
+
+
 // Responsive adjustments
 @media (max-width: variables.$breakpoint-md) {
   .page-container {

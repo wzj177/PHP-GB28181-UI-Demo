@@ -56,7 +56,8 @@ onMounted(() => {
 })
 
 defineExpose({
-  moveToTarget
+  moveToTarget,
+  scrollContainerRef
 })
 </script>
 
@@ -66,6 +67,7 @@ defineExpose({
   position: relative;
   overflow: hidden;
   width: 100%;
+  height: 100%;
   .scroll-wrapper {
     display: inline-block;
     position: absolute;

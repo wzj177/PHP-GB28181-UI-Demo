@@ -11,7 +11,6 @@
         :class="isActive(tag) ? 'active' : ''"
         :to="{ path: tag.path, query: tag.query, fullPath: tag.fullPath }"
         class="tags-view-item"
-        :style="activeStyle(tag)"
         @click.middle="!isAffix(tag) ? closeSelectedTag(tag) : ''"
         @contextmenu.prevent="openMenu(tag, $event)"
       >
@@ -96,14 +95,6 @@ const cachedViews = computed(() => store.cachedViews)
 // Functions
 const isActive = (tag: Tag) => {
   return tag.path === route.path
-}
-
-const activeStyle = (tag: Tag) => {
-  if (!isActive(tag)) return {}
-  return {
-    color: '#3B82F6',
-    borderColor: '#3B82F6'
-  }
 }
 
 const isAffix = (tag: Tag) => {
@@ -209,8 +200,11 @@ const closeAllTags = (view: Tag) => {
 
 const openMenu = (tag: Tag, e: MouseEvent) => {
   const menuMinWidth = 105
-  const offsetLeft = scrollPaneRef.value?.$el.getBoundingClientRect().left || 0
-  const offsetWidth = scrollPaneRef.value?.$el.offsetWidth || 0
+  const containerEl = scrollPaneRef.value?.scrollContainerRef
+  if (!containerEl) return
+
+  const offsetLeft = containerEl.getBoundingClientRect().left
+  const offsetWidth = containerEl.offsetWidth
   const maxLeft = offsetWidth - menuMinWidth
   const leftValue = e.clientX - offsetLeft
   left.value = leftValue > maxLeft ? maxLeft : leftValue
@@ -263,6 +257,7 @@ onBeforeUnmount(() => {
       display: inline-block;
       position: relative;
       cursor: pointer;
+      text-decoration: none;
       height: 26px;
       line-height: 26px;
       border: 1px solid var(--border-base);

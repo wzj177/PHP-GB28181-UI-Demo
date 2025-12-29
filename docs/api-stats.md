@@ -8,7 +8,7 @@
 
 ### 1.1 获取系统资源统计
 
-**接口地址:** `GET /api/system/stats`
+**接口地址:** `GET /api/admin/system/stats`
 
 **请求参数:** 无
 
@@ -51,7 +51,7 @@
 
 ### 2.1 获取 ZLMediaKit 状态统计
 
-**接口地址:** `GET /api/system/zlm-stats`
+**接口地址:** `GET /api/admin/system/zlm-stats`
 
 **请求参数:** 无
 
@@ -108,7 +108,7 @@
 
 ### 3.1 获取设备统计信息
 
-**接口地址:** `GET /api/system/device-stats`
+**接口地址:** `GET /api/admin/system/device-stats`
 
 **请求参数:** 无
 
@@ -222,7 +222,7 @@ Authorization: Bearer {token}
 
 ## Mock 数据配置
 
-开发环境下，前端已配置 Mock 数据（`src/api/adapter.ts`），可通过设置环境变量控制：
+开发环境下，前端已配置 Mock 数据（`src/api/admin/adapter.ts`），可通过设置环境变量控制：
 
 ```bash
 # 使用 Mock 数据
@@ -237,7 +237,7 @@ VITE_MOCK_ENABLED=false
 ## 前端 API 调用示例
 
 ```typescript
-import { monitorApi } from '@/api/monitorApi'
+import { monitorApi } from '@/api/admin/monitorApi'
 
 // 获取系统统计
 const systemStats = await monitorApi.getSystemStats()

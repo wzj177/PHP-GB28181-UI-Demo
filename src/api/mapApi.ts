@@ -9,24 +9,24 @@ import request from '@/utils/request';
 export const mapApi = {
   /**
    * 获取地图设备列表（包含位置信息）
-   * GET /gb28181/map/devices
+   * GET /admin/gb28181/map/devices
    */
   getDeviceLocations: (params?: {
     status?: string;
   }) => {
-    return request.get('/gb28181/map/devices', { params });
+    return request.get('/admin/gb28181/map/devices', { params });
   },
 
   /**
    * 更新设备位置
-   * PUT /gb28181/map/devices/{id}/position
+   * PUT /admin/gb28181/map/devices/{id}/position
    */
   updateDevicePosition: (id: string, data: {
     latitude: number;
     longitude: number;
     address?: string;
   }) => {
-    return request.put(`/gb28181/map/devices/${id}/position`, data);
+    return request.put(`/admin/gb28181/map/devices/${id}/position`, data);
   }
 };
 
